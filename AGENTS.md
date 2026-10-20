@@ -37,6 +37,8 @@ Inspect only the context relevant to the task. As needed, check:
 - Component references, object creation, data flow, lifecycle, and existing code conventions.
 - Relevant tests and known project constraints.
 
+If the project already has an asset (3d model, animation, music, ...), use it. If not, find in the internet, or generate, depend on what is cheaper.
+
 Do not assume the project uses URP, HDRP, 2D, 3D, the new Input System, a DI framework, or a particular package version until the project confirms it.
 
 Trace the relevant callers, dependencies, and consumers of code being changed. Avoid scanning or rewriting the entire project without a clear reason.
@@ -54,6 +56,8 @@ For non-trivial tasks:
 7. **Report:** summarize changes, checks performed, and remaining limitations.
 
 Do not create a formal plan for trivial tasks. If an ambiguity does not block safe progress, choose the simplest reversible option and state the assumption in your report. Ask a question only when proceeding safely is impossible or the choice would materially change the result.
+
+The AI agent must escalate all unresolved questions for approval or document them as explicit, reversible, and easily modifiable assumptions. It must not silently resolve ambiguities or allow temporary workarounds and provisional decisions to become permanent architectural or design choices without explicit approval.
 
 ## 5. C# and Unity Code Standards
 

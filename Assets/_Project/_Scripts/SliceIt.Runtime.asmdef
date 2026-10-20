@@ -1,0 +1,22 @@
+{
+    "name": "SliceIt.Runtime",
+    "rootNamespace": "SliceIt",
+    "references": [
+        "Unity.Collections",
+        "Unity.Networking.Transport",
+        "Unity.Netcode.Runtime",
+        "Unity.InputSystem",
+        "Unity.Services.Core",
+        "Unity.Services.Authentication",
+        "Unity.Services.Relay"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,26 @@
+{
+    "name": "SliceIt.Tests.EditMode",
+    "rootNamespace": "SliceIt.Tests",
+    "references": [
+        "SliceIt.Runtime",
+        "Unity.Netcode.Runtime",
+        "Unity.InputSystem",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
