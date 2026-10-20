@@ -583,6 +583,7 @@ GameObject:
   - component: {fileID: 7776811704053691026}
   - component: {fileID: 5676362566056359651}
   - component: {fileID: 5995435365760652453}
+  - component: {fileID: 7004134751714614830}
   m_Layer: 0
   m_Name: Enemy_Rank1
   m_TagString: Untagged
@@ -653,7 +654,7 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.4
+  m_Radius: 0.42
   m_Height: 1.8
   m_Direction: 1
   m_Center: {x: 0, y: 0.9, z: 0}
@@ -669,7 +670,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2159311427
+  GlobalObjectIdHash: 129117308
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -750,6 +751,24 @@ MonoBehaviour:
   bodyCollider: {fileID: 5135540164717961487}
   visualRoot: {fileID: 645095738095695328}
   rb: {fileID: 4331084189443608797}
+--- !u!114 &7004134751714614830
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1961751058514609727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49b797b308be57d4cb203365efe65828, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SliceIt.Runtime::SliceIt.Enemies.EnemyAI
+  ShowTopMostFoldoutHeaderGroup: 1
+  aggroRadius: 28
+  moveSpeed: 3.05
+  attackRange: 2.25
+  attackDamage: 25
+  attackCooldown: 1.88
 --- !u!1 &2302096568942655762
 GameObject:
   m_ObjectHideFlags: 0

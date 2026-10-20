@@ -30,6 +30,7 @@ namespace SliceIt.Combat
         public Vector2 VirtualCursorPosition => virtualCursor;
 
         private PlayerController playerController;
+        private PlayerAbilities playerAbilities;
         private readonly List<TrajectoryPoint2D> points = new List<TrajectoryPoint2D>(64);
         private float recordStartTime;
         private Vector2 virtualCursor;
@@ -37,6 +38,7 @@ namespace SliceIt.Combat
         private void Awake()
         {
             playerController = GetComponent<PlayerController>();
+            playerAbilities = GetComponent<PlayerAbilities>();
         }
 
         private void Update()
@@ -48,12 +50,18 @@ namespace SliceIt.Combat
 
             if (!IsRecording)
             {
-                // Can only initiate attack when grounded and LMB pressed
+                // Can only initiate attack when grounded, not dashing/grappling/blocking, and LMB pressed
                 if (mouse.leftButton.wasPressedThisFrame)
                 {
                     if (playerController != null && !playerController.IsGrounded)
                     {
                         // Cannot attack while in mid-air (jumping/falling)
+                        return;
+                    }
+
+                    if (playerAbilities != null && (playerAbilities.IsDashing || playerAbilities.IsGrappling || playerAbilities.IsBlocking))
+                    {
+                        // Cannot attack during mobility maneuvers or blocking
                         return;
                     }
 

@@ -527,6 +527,7 @@ GameObject:
   - component: {fileID: 6397117874438066008}
   - component: {fileID: 1761592546740977231}
   - component: {fileID: 7122670756022356060}
+  - component: {fileID: 1176764591023347418}
   m_Layer: 0
   m_Name: Enemy_Rank2
   m_TagString: Untagged
@@ -597,10 +598,10 @@ CapsuleCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Radius: 0.55
-  m_Height: 2.4
+  m_Radius: 0.567
+  m_Height: 2.43
   m_Direction: 1
-  m_Center: {x: 0, y: 1.2, z: 0}
+  m_Center: {x: 0, y: 1.215, z: 0}
 --- !u!114 &6397117874438066008
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -613,14 +614,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2159311427
+  GlobalObjectIdHash: 1273144
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -694,6 +695,24 @@ MonoBehaviour:
   bodyCollider: {fileID: 2846414691940033300}
   visualRoot: {fileID: 4687651014211601879}
   rb: {fileID: 5735452110112334329}
+--- !u!114 &1176764591023347418
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2295319471517728675}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49b797b308be57d4cb203365efe65828, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SliceIt.Runtime::SliceIt.Enemies.EnemyAI
+  ShowTopMostFoldoutHeaderGroup: 1
+  aggroRadius: 32
+  moveSpeed: 3.3
+  attackRange: 2.6999998
+  attackDamage: 35
+  attackCooldown: 1.76
 --- !u!1 &2418885684826857073
 GameObject:
   m_ObjectHideFlags: 0
@@ -819,8 +838,8 @@ Transform:
   m_GameObject: {fileID: 2502223569991604958}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.45, z: 0.15}
-  m_LocalScale: {x: 0.45, y: 0.45, z: 0.45}
+  m_LocalPosition: {x: 0, y: 1.485, z: 0.135}
+  m_LocalScale: {x: 0.4725, y: 0.4725, z: 0.4725}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7221042999892832914}

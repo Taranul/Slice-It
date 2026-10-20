@@ -48,8 +48,8 @@ namespace SliceIt.Enemies
         );
 
         public int EnemyId => enemyId;
-        public int PairId => NetworkPairId.Value > 0 ? NetworkPairId.Value : pairId;
-        public int Rank => NetworkRank.Value > 0 ? NetworkRank.Value : rank;
+        public int PairId => IsSpawned ? NetworkPairId.Value : pairId;
+        public int Rank => IsSpawned ? NetworkRank.Value : rank;
         public EnemyCore Core => core;
         public bool IsActive => State.Value == EnemyState.Active;
         public Vector3 DefeatedPosition { get; private set; }
