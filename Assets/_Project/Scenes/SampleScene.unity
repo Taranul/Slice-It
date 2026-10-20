@@ -119,6 +119,11 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!23 &89661733 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5226654218315894064, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
+  m_PrefabInstance: {fileID: 1017495535}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &300728076
 GameObject:
   m_ObjectHideFlags: 0
@@ -326,6 +331,102 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &879418144
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 879418146}
+  - component: {fileID: 879418145}
+  - component: {fileID: 879418148}
+  - component: {fileID: 879418147}
+  m_Layer: 0
+  m_Name: Arena_Progression
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &879418145
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 879418144}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2256456803
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!4 &879418146
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 879418144}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &879418147
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 879418144}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df4c525cdc45dfc4fab965fa2cd60432, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SliceIt.Runtime::SliceIt.Progression.PairManager
+  ShowTopMostFoldoutHeaderGroup: 1
+  defaultPairWindowDuration: 10
+  configuredPairs:
+  - PairId: 1
+    EnemyA: {fileID: 1017495536}
+    EnemyB: {fileID: 998503797}
+    MergeSpawnPoint: {fileID: 300728077}
+    NextRankPrefab: {fileID: 2295319471517728675, guid: afbc6a21b9d6a3b438be9714322f23a8, type: 3}
+    PairColor: {r: 0, g: 1, b: 1, a: 1}
+  rank2Prefab: {fileID: 0}
+--- !u!114 &879418148
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 879418144}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b2047a49932b5649bbfdcb107bc9611, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SliceIt.Runtime::SliceIt.Networking.NetworkAuthorityPingTest
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1001 &998503796
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -336,7 +437,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1853870618767031624, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3
+      value: 3.5
       objectReference: {fileID: 0}
     - target: {fileID: 1853870618767031624, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
       propertyPath: m_LocalPosition.y
@@ -344,7 +445,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1853870618767031624, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 7
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 1853870618767031624, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
       propertyPath: m_LocalRotation.w
@@ -378,6 +479,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Enemy_Pair1_B
       objectReference: {fileID: 0}
+    - target: {fileID: 2505944874397606615, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
+      propertyPath: ownerEnemy
+      value: 
+      objectReference: {fileID: 998503797}
+    - target: {fileID: 2505944874397606615, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
+      propertyPath: coreRenderer
+      value: 
+      objectReference: {fileID: 2012378987}
     - target: {fileID: 5995435365760652453, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
       propertyPath: pairId
       value: 1
@@ -403,6 +512,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
+--- !u!114 &998503797 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5995435365760652453, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
+  m_PrefabInstance: {fileID: 998503796}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53dd29ce9f0c5304c81ef6ee8f6b38e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SliceIt.Runtime::SliceIt.Enemies.EnemyEntity
 --- !u!1 &1000473791
 GameObject:
   m_ObjectHideFlags: 0
@@ -565,7 +685,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1853870618767031624, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -3
+      value: -3.5
       objectReference: {fileID: 0}
     - target: {fileID: 1853870618767031624, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
       propertyPath: m_LocalPosition.y
@@ -573,7 +693,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1853870618767031624, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 7
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 1853870618767031624, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
       propertyPath: m_LocalRotation.w
@@ -607,6 +727,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Enemy_Pair1_A
       objectReference: {fileID: 0}
+    - target: {fileID: 2505944874397606615, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
+      propertyPath: ownerEnemy
+      value: 
+      objectReference: {fileID: 1017495536}
+    - target: {fileID: 2505944874397606615, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
+      propertyPath: coreRenderer
+      value: 
+      objectReference: {fileID: 89661733}
     - target: {fileID: 5995435365760652453, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
       propertyPath: pairId
       value: 1
@@ -632,6 +760,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
+--- !u!114 &1017495536 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5995435365760652453, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
+  m_PrefabInstance: {fileID: 1017495535}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 53dd29ce9f0c5304c81ef6ee8f6b38e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: SliceIt.Runtime::SliceIt.Enemies.EnemyEntity
 --- !u!1 &1408228695
 GameObject:
   m_ObjectHideFlags: 0
@@ -744,6 +883,11 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!23 &2012378987 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 5226654218315894064, guid: 545b17dad0b00d84089d55b722461c1f, type: 3}
+  m_PrefabInstance: {fileID: 998503796}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -755,3 +899,4 @@ SceneRoots:
   - {fileID: 1017495535}
   - {fileID: 998503796}
   - {fileID: 300728077}
+  - {fileID: 879418146}

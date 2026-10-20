@@ -35,9 +35,16 @@ namespace SliceIt.Player
         private bool isCameraLookLocked = false;
 
         public bool IsCameraLookLocked => isCameraLookLocked;
-        public bool IsGrounded => characterController != null && characterController.isGrounded;
+        public bool IsGrounded => CheckGrounded();
         public Vector3 Velocity => characterController != null ? characterController.velocity : Vector3.zero;
         public Camera PlayerCamera => playerCamera;
+
+        private bool CheckGrounded()
+        {
+            if (characterController != null && characterController.isGrounded) return true;
+            // Raycast fallback to handle slight ground unevenness
+            return Physics.Raycast(transform.position + Vector3.up * 0.15f, Vector3.down, 0.35f);
+        }
 
         private void Awake()
         {
@@ -66,6 +73,15 @@ namespace SliceIt.Player
 
             if (IsOwner)
             {
+                // Position owner at designated starting spawn point
+                Vector3 spawnPos = IsServer ? new Vector3(-3f, 1f, 0f) : new Vector3(3f, 1f, 0f);
+                Quaternion spawnRot = Quaternion.LookRotation((Vector3.zero - spawnPos).normalized, Vector3.up);
+
+                if (characterController != null) characterController.enabled = false;
+                transform.position = spawnPos;
+                transform.rotation = spawnRot;
+                if (characterController != null) characterController.enabled = true;
+
                 // Local player setup
                 if (cameraHolder != null) cameraHolder.gameObject.SetActive(true);
                 if (playerCamera != null) playerCamera.enabled = true;
@@ -79,7 +95,8 @@ namespace SliceIt.Player
             }
             else
             {
-                // Remote player setup: disable local camera and audio
+                // Remote player setup: disable local camera, audio, and character controller
+                if (characterController != null) characterController.enabled = false;
                 if (cameraHolder != null) cameraHolder.gameObject.SetActive(false);
                 if (playerCamera != null) playerCamera.enabled = false;
                 if (audioListener != null) audioListener.enabled = false;

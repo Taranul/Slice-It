@@ -41,6 +41,8 @@ namespace SliceIt.Combat
 
         private void Update()
         {
+            if (playerController != null && !playerController.IsOwner) return;
+
             var mouse = Mouse.current;
             if (mouse == null) return;
 

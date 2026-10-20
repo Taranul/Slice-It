@@ -76,6 +76,11 @@ namespace SliceIt.Enemies
             {
                 NetworkPairId.Value = pairId;
                 NetworkRank.Value = rank;
+
+                if (SliceIt.Progression.PairManager.Instance != null)
+                {
+                    SliceIt.Progression.PairManager.Instance.RegisterEnemy(this);
+                }
             }
         }
 
@@ -115,7 +120,13 @@ namespace SliceIt.Enemies
 
             DefeatedPosition = transform.position;
             State.Value = EnemyState.DefeatedPending;
+            ApplyStateVisuals(EnemyState.DefeatedPending);
             OnDefeatedPending?.Invoke(this);
+
+            if (SliceIt.Progression.PairManager.Instance != null)
+            {
+                SliceIt.Progression.PairManager.Instance.NotifyEnemyDefeated(this);
+            }
 
             NotifyCorePiercedClientRpc(attackerClientId, DefeatedPosition);
         }
@@ -129,6 +140,7 @@ namespace SliceIt.Enemies
 
             transform.position = position;
             State.Value = EnemyState.Active;
+            ApplyStateVisuals(EnemyState.Active);
             OnRestored?.Invoke(this);
 
             NotifyRestoredClientRpc(position);
@@ -142,7 +154,14 @@ namespace SliceIt.Enemies
             if (!IsServer) return;
 
             State.Value = EnemyState.MergedDespawned;
-            gameObject.SetActive(false);
+            if (NetworkObject != null && NetworkObject.IsSpawned)
+            {
+                NetworkObject.Despawn(true);
+            }
+            else
+            {
+                gameObject.SetActive(false);
+            }
         }
 
         #endregion
@@ -178,12 +197,15 @@ namespace SliceIt.Enemies
         [Rpc(SendTo.ClientsAndHost)]
         private void NotifyCorePiercedClientRpc(ulong attackerId, Vector3 pos)
         {
+            ApplyStateVisuals(EnemyState.DefeatedPending);
             Debug.Log($"[EnemyEntity] Enemy {enemyId} core pierced by Client {attackerId} at {pos}!");
         }
 
         [Rpc(SendTo.ClientsAndHost)]
         private void NotifyRestoredClientRpc(Vector3 pos)
         {
+            transform.position = pos;
+            ApplyStateVisuals(EnemyState.Active);
             Debug.Log($"[EnemyEntity] Enemy {enemyId} restored to full health at {pos} after pair timeout.");
         }
 

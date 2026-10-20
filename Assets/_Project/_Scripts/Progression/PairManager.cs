@@ -10,6 +10,7 @@ namespace SliceIt.Progression
     /// Server-authoritative manager of enemy pairs, 10-second pair windows,
     /// timeout restorations, and next-rank merges.
     /// </summary>
+    [RequireComponent(typeof(NetworkObject))]
     public class PairManager : NetworkBehaviour
     {
         public static PairManager Instance { get; private set; }
@@ -19,6 +20,9 @@ namespace SliceIt.Progression
         [SerializeField] private float defaultPairWindowDuration = 10.0f;
 
         [SerializeField] private List<EnemyPair> configuredPairs = new List<EnemyPair>();
+
+        [Header("Prefabs for Merging")]
+        [SerializeField] private GameObject rank2Prefab;
 
         // Synchronized network state for HUD
         public NetworkVariable<int> ActivePairId { get; } = new NetworkVariable<int>(
@@ -51,37 +55,68 @@ namespace SliceIt.Progression
 
         public override void OnNetworkSpawn()
         {
+            base.OnNetworkSpawn();
+            Debug.Log($"[PairManager] Spawned on network. IsServer={IsServer}, IsClient={IsClient}");
+
             ActivePairId.OnValueChanged += HandleActivePairChanged;
             PairWindowRemaining.OnValueChanged += HandleTimerChanged;
 
             if (IsServer)
             {
+                AutoDiscoverScenePairs();
                 InitializePairs();
             }
         }
 
         public override void OnNetworkDespawn()
         {
+            base.OnNetworkDespawn();
             ActivePairId.OnValueChanged -= HandleActivePairChanged;
             PairWindowRemaining.OnValueChanged -= HandleTimerChanged;
-
-            if (IsServer)
-            {
-                UnsubscribePairs();
-            }
         }
 
-        public void RegisterPair(EnemyPair pair)
+        public void RegisterEnemy(EnemyEntity enemy)
         {
-            if (!configuredPairs.Contains(pair))
+            if (!IsServer || enemy == null) return;
+
+            int pid = enemy.PairId;
+            var pair = configuredPairs.Find(p => p.PairId == pid);
+            if (pair == null)
             {
+                pair = new EnemyPair
+                {
+                    PairId = pid,
+                    EnemyA = enemy,
+                    NextRankPrefab = rank2Prefab,
+                    PairColor = Color.cyan
+                };
                 configuredPairs.Add(pair);
+                pair.Initialize();
+            }
+            else
+            {
+                if (pair.EnemyA == null) pair.EnemyA = enemy;
+                else if (pair.EnemyB == null && pair.EnemyA != enemy) pair.EnemyB = enemy;
+                pair.Initialize();
             }
 
-            if (IsServer)
+            Debug.Log($"[PairManager] Registered enemy {enemy.EnemyId} to Pair {pid}. A={(pair.EnemyA != null ? pair.EnemyA.name : "null")}, B={(pair.EnemyB != null ? pair.EnemyB.name : "null")}");
+        }
+
+        private void AutoDiscoverScenePairs()
+        {
+            var enemies = FindObjectsByType<EnemyEntity>(FindObjectsSortMode.None);
+            for (int i = 0; i < enemies.Length; i++)
             {
-                pair.Initialize();
-                SubscribePairEvents(pair);
+                RegisterEnemy(enemies[i]);
+            }
+
+            var spawnPoint = GameObject.Find("MergeSpawnPoint_Pair1");
+            var pair1 = configuredPairs.Find(p => p.PairId == 1);
+            if (pair1 != null)
+            {
+                if (spawnPoint != null) pair1.MergeSpawnPoint = spawnPoint.transform;
+                if (pair1.NextRankPrefab == null) pair1.NextRankPrefab = rank2Prefab;
             }
         }
 
@@ -89,25 +124,7 @@ namespace SliceIt.Progression
         {
             for (int i = 0; i < configuredPairs.Count; i++)
             {
-                var pair = configuredPairs[i];
-                pair.Initialize();
-                SubscribePairEvents(pair);
-            }
-        }
-
-        private void SubscribePairEvents(EnemyPair pair)
-        {
-            if (pair.EnemyA != null) pair.EnemyA.OnDefeatedPending += HandleEnemyDefeated;
-            if (pair.EnemyB != null) pair.EnemyB.OnDefeatedPending += HandleEnemyDefeated;
-        }
-
-        private void UnsubscribePairs()
-        {
-            for (int i = 0; i < configuredPairs.Count; i++)
-            {
-                var pair = configuredPairs[i];
-                if (pair.EnemyA != null) pair.EnemyA.OnDefeatedPending -= HandleEnemyDefeated;
-                if (pair.EnemyB != null) pair.EnemyB.OnDefeatedPending -= HandleEnemyDefeated;
+                configuredPairs[i].Initialize();
             }
         }
 
@@ -137,7 +154,6 @@ namespace SliceIt.Progression
 
                 if (pair.WindowTimer <= 0f)
                 {
-                    // Timeout!
                     ResolvePairTimeout(pair);
                 }
             }
@@ -149,12 +165,22 @@ namespace SliceIt.Progression
             }
         }
 
-        private void HandleEnemyDefeated(EnemyEntity defeatedEnemy)
+        /// <summary>
+        /// Direct entry point called by EnemyEntity when its core is pierced.
+        /// </summary>
+        public void NotifyEnemyDefeated(EnemyEntity defeatedEnemy)
         {
-            if (!IsServer) return;
+            if (!IsServer || defeatedEnemy == null) return;
 
-            var pair = configuredPairs.Find(p => p.PairId == defeatedEnemy.PairId);
-            if (pair == null) return;
+            int pid = defeatedEnemy.PairId;
+            var pair = configuredPairs.Find(p => p.PairId == pid);
+            if (pair == null)
+            {
+                Debug.LogWarning($"[PairManager] No pair found for defeated enemy with pairId={pid}");
+                return;
+            }
+
+            Debug.Log($"[PairManager] NotifyEnemyDefeated for Enemy {defeatedEnemy.EnemyId} (Pair {pid}). Current resolution state: {pair.ResolutionState}");
 
             if (pair.ResolutionState == PairResolutionState.BothActive)
             {
@@ -166,12 +192,17 @@ namespace SliceIt.Progression
                 ActivePairId.Value = pair.PairId;
                 PairWindowRemaining.Value = defaultPairWindowDuration;
 
+                Debug.Log($"[PairManager] >>> PAIR {pair.PairId} WINDOW STARTED: {defaultPairWindowDuration}s remaining! <<<");
                 NotifyPairWindowStartedClientRpc(pair.PairId, defaultPairWindowDuration);
             }
             else if (pair.ResolutionState == PairResolutionState.WindowRunning)
             {
-                // Second enemy defeated within window: SUCCESSFUL MERGE!
-                ResolvePairMerge(pair);
+                // If it's the other enemy of the pair: SUCCESSFUL MERGE!
+                if (defeatedEnemy != pair.FirstDefeated)
+                {
+                    Debug.Log($"[PairManager] >>> PAIR {pair.PairId} SECOND ENEMY DEFEATED IN TIME! EXECUTING MERGE! <<<");
+                    ResolvePairMerge(pair);
+                }
             }
         }
 
@@ -184,17 +215,23 @@ namespace SliceIt.Progression
             if (pair.EnemyB != null) pair.EnemyB.CompleteMerge();
 
             // Spawn next rank enemy at designated spawn point
-            Vector3 spawnPos = pair.MergeSpawnPoint != null ? pair.MergeSpawnPoint.position : (pair.EnemyA.transform.position + pair.EnemyB.transform.position) * 0.5f;
+            Vector3 spawnPos = pair.MergeSpawnPoint != null ? pair.MergeSpawnPoint.position : Vector3.zero;
             Quaternion spawnRot = pair.MergeSpawnPoint != null ? pair.MergeSpawnPoint.rotation : Quaternion.identity;
 
-            if (pair.NextRankPrefab != null)
+            GameObject prefabToSpawn = pair.NextRankPrefab != null ? pair.NextRankPrefab : rank2Prefab;
+            if (prefabToSpawn != null)
             {
-                var nextRankObj = Instantiate(pair.NextRankPrefab, spawnPos, spawnRot);
+                var nextRankObj = Instantiate(prefabToSpawn, spawnPos, spawnRot);
                 var netObj = nextRankObj.GetComponent<NetworkObject>();
                 if (netObj != null)
                 {
                     netObj.Spawn();
+                    Debug.Log($"[PairManager] Spawned next rank enemy ({nextRankObj.name}) on network at {spawnPos}.");
                 }
+            }
+            else
+            {
+                Debug.LogError("[PairManager] Cannot spawn next rank enemy: NextRankPrefab is null!");
             }
 
             if (ActivePairId.Value == pair.PairId)
@@ -208,6 +245,7 @@ namespace SliceIt.Progression
 
         private void ResolvePairTimeout(EnemyPair pair)
         {
+            Debug.Log($"[PairManager] >>> PAIR {pair.PairId} TIMED OUT! Restoring enemies to full health... <<<");
             pair.ResolutionState = PairResolutionState.Restored;
 
             // Restore first defeated enemy at the position where it fell
@@ -240,21 +278,21 @@ namespace SliceIt.Progression
         [Rpc(SendTo.ClientsAndHost)]
         private void NotifyPairWindowStartedClientRpc(int pairId, float duration)
         {
-            Debug.Log($"[PairManager] Pair {pairId} window STARTED! {duration} seconds remaining to kill partner.");
+            Debug.Log($"[PairManager] (ClientRpc) Pair {pairId} window STARTED! {duration:F1}s remaining.");
             OnPairWindowUpdated?.Invoke(pairId, duration);
         }
 
         [Rpc(SendTo.ClientsAndHost)]
         private void NotifyMergeCompletedClientRpc(int pairId, Vector3 mergePoint)
         {
-            Debug.Log($"[PairManager] Pair {pairId} successfully MERGED at {mergePoint} into next rank!");
+            Debug.Log($"[PairManager] (ClientRpc) Pair {pairId} successfully MERGED at {mergePoint}!");
             OnMergeCompleted?.Invoke(pairId);
         }
 
         [Rpc(SendTo.ClientsAndHost)]
         private void NotifyPairTimeoutClientRpc(int pairId)
         {
-            Debug.Log($"[PairManager] Pair {pairId} TIMED OUT! Enemies restored to full health.");
+            Debug.Log($"[PairManager] (ClientRpc) Pair {pairId} TIMED OUT! Enemies restored.");
             OnPairTimedOut?.Invoke(pairId);
         }
 

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using SliceIt.Combat;
 using SliceIt.Enemies;
+using SliceIt.Player;
 using SliceIt.Progression;
 using Unity.Netcode;
 using UnityEngine;
@@ -84,6 +85,35 @@ namespace SliceIt.Tests
             Assert.AreEqual(0f, pair.WindowTimer);
             Assert.IsNull(pair.FirstDefeated);
             Assert.IsFalse(pair.IsWindowActive);
+        }
+
+        [Test]
+        public void ClientNetworkTransform_IsOwnerAuthoritative()
+        {
+            var go = new GameObject("TestClientTransform");
+            var cnt = go.AddComponent<ClientNetworkTransform>();
+
+            // Reflection to check protected OnIsServerAuthoritative returns false
+            var method = typeof(ClientNetworkTransform).GetMethod(
+                "OnIsServerAuthoritative",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+            );
+            Assert.IsNotNull(method, "OnIsServerAuthoritative method must exist.");
+
+            bool isServerAuth = (bool)method.Invoke(cnt, null);
+            Assert.IsFalse(isServerAuth, "ClientNetworkTransform must NOT be server-authoritative (must return false for owner authority).");
+
+            Object.DestroyImmediate(go);
+        }
+
+        [Test]
+        public void PlayerPrefab_UsesClientNetworkTransform()
+        {
+            var playerPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Player.prefab");
+            Assert.IsNotNull(playerPrefab);
+
+            var cnt = playerPrefab.GetComponent<ClientNetworkTransform>();
+            Assert.IsNotNull(cnt, "Player.prefab must have ClientNetworkTransform to allow non-host client locomotion and rotation.");
         }
     }
 }

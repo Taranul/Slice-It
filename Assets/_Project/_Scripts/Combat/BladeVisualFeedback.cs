@@ -17,11 +17,13 @@ namespace SliceIt.Combat
         [SerializeField] private float lineWidth = 4.0f;
 
         private BladeInputRecorder recorder;
+        private Player.PlayerController playerController;
         private Texture2D lineTex;
         private GUIStyle timerStyle;
 
         private void Awake()
         {
+            playerController = GetComponent<Player.PlayerController>();
             recorder = GetComponent<BladeInputRecorder>();
 
             // Create 1x1 white texture for drawing smooth GUI lines
@@ -40,6 +42,8 @@ namespace SliceIt.Combat
 
         private void OnGUI()
         {
+            if (playerController != null && !playerController.IsOwner) return;
+
             DrawCrosshair();
             DrawActiveSlashGesture();
             DrawPairWindowTimer();

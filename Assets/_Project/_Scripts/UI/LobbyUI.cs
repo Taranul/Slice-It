@@ -84,7 +84,7 @@ namespace SliceIt.UI
             GUI.skin.textField.fontSize = 13;
 
             int panelWidth = 360;
-            int panelHeight = isConnected ? 280 : 420;
+            int panelHeight = isConnected ? 340 : 420;
             Rect panelRect = new Rect(20, 20, panelWidth, panelHeight);
 
             GUI.Box(panelRect, isConnected ? "SLICE IT! — ACTIVE SESSION" : "SLICE IT! — MULTIPLAYER LOBBY");
@@ -94,6 +94,17 @@ namespace SliceIt.UI
             GUI.color = isConnected ? Color.green : Color.yellow;
             GUILayout.Label($"Status: {statusMessage}");
             GUI.color = Color.white;
+
+            // Active Pair Window Status
+            if (SliceIt.Progression.PairManager.Instance != null && SliceIt.Progression.PairManager.Instance.PairWindowRemaining.Value > 0f)
+            {
+                float rem = SliceIt.Progression.PairManager.Instance.PairWindowRemaining.Value;
+                int pid = SliceIt.Progression.PairManager.Instance.ActivePairId.Value;
+                GUILayout.Space(5);
+                GUI.color = new Color(1f, 0.3f, 0.3f);
+                GUILayout.Box($"<b>>>> PAIR {pid} WINDOW: {rem:F1}s <<<</b>");
+                GUI.color = Color.white;
+            }
 
             GUILayout.Space(10);
 

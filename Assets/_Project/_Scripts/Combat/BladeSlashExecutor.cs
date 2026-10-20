@@ -18,9 +18,9 @@ namespace SliceIt.Combat
     public class BladeSlashExecutor : NetworkBehaviour
     {
         [Header("Blade Reach & Geometry")]
-        [SerializeField] private float bladeReach = 2.6f;
-        [SerializeField] private float nearOffset = 0.4f;
-        [SerializeField] private float slashThickness = 0.15f;
+        [SerializeField] private float bladeReach = 2.8f;
+        [SerializeField] private float nearOffset = 0.3f;
+        [SerializeField] private float slashThickness = 0.25f;
 
         public event Action<Vector3, Vector3> OnSlashExecuted; // Start & End world positions for visual trail
 
@@ -82,7 +82,13 @@ namespace SliceIt.Combat
                 Vector3 center = (seg.BladeBase + seg.BladeTip) * 0.5f;
                 float halfHeight = Vector3.Distance(seg.BladeBase, seg.BladeTip) * 0.5f;
 
-                Collider[] overlaps = Physics.OverlapCapsule(seg.BladeBase, seg.BladeTip, slashThickness);
+                Collider[] overlaps = Physics.OverlapCapsule(
+                    seg.BladeBase,
+                    seg.BladeTip,
+                    slashThickness,
+                    ~0,
+                    QueryTriggerInteraction.Collide
+                );
 
                 for (int j = 0; j < overlaps.Length; j++)
                 {
@@ -93,6 +99,7 @@ namespace SliceIt.Combat
                     if (core != null && core.OwnerEnemy != null && core.OwnerEnemy.IsActive)
                     {
                         hitCore = core;
+                        Debug.Log($"[BladeSlashExecutor] Detected core collision on enemy {core.OwnerEnemy.EnemyId}!");
                         break; // Stop immediately: max 1 core hit!
                     }
 
@@ -134,17 +141,31 @@ namespace SliceIt.Combat
         [Rpc(SendTo.Server)]
         private void RequestCoreHitServerRpc(ulong enemyNetworkObjectId, RpcParams rpcParams = default)
         {
+            if (NetworkManager.Singleton == null || NetworkManager.Singleton.SpawnManager == null) return;
+
             if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(enemyNetworkObjectId, out var netObj))
+            {
+                Debug.LogWarning($"[BladeSlashExecutor] ServerRpc: Enemy NetworkObject {enemyNetworkObjectId} not found in SpawnedObjects.");
                 return;
+            }
 
             var enemy = netObj.GetComponent<EnemyEntity>();
-            if (enemy == null || !enemy.IsActive) return;
+            if (enemy == null || !enemy.IsActive)
+            {
+                Debug.LogWarning($"[BladeSlashExecutor] ServerRpc: Enemy is null or not active.");
+                return;
+            }
 
             // Distance sanity check: within reach + player movement margin
             float dist = Vector3.Distance(transform.position, enemy.transform.position);
-            if (dist > bladeReach + 3.0f) return;
+            if (dist > bladeReach + 5.0f)
+            {
+                Debug.LogWarning($"[BladeSlashExecutor] ServerRpc: Enemy distance too far ({dist:F1}m > {bladeReach + 5.0f}m).");
+                return;
+            }
 
             ulong attackerId = rpcParams.Receive.SenderClientId;
+            Debug.Log($"[BladeSlashExecutor] Server successfully verified core hit on Enemy {enemy.EnemyId} (Pair {enemy.PairId}) from Client {attackerId}.");
             enemy.PierceCore(attackerId);
         }
 
