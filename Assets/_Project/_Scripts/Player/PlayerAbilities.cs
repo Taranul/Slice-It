@@ -24,6 +24,7 @@ namespace SliceIt.Player
         [SerializeField] private float grapplePullSpeed = 24f;
         [SerializeField] private float grappleCooldown = 3.5f;
         [SerializeField] private LineRenderer ropeRenderer;
+        [SerializeField] private Material ropeMaterial;
 
         [Header("Block Settings")]
         [SerializeField] private Transform shieldVisual;
@@ -59,18 +60,43 @@ namespace SliceIt.Player
             characterController = GetComponent<CharacterController>();
             playerHealth = GetComponent<PlayerHealth>();
 
-            if (ropeRenderer == null)
+            InitializeRopeRenderer();
+        }
+
+        private void InitializeRopeRenderer()
+        {
+            try
             {
-                ropeRenderer = GetComponent<LineRenderer>();
                 if (ropeRenderer == null)
                 {
-                    ropeRenderer = gameObject.AddComponent<LineRenderer>();
-                    ropeRenderer.startWidth = 0.04f;
-                    ropeRenderer.endWidth = 0.04f;
-                    ropeRenderer.material = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-                    ropeRenderer.material.color = new Color(0.9f, 0.85f, 0.6f);
-                    ropeRenderer.enabled = false;
+                    ropeRenderer = GetComponent<LineRenderer>();
+                    if (ropeRenderer == null)
+                    {
+                        ropeRenderer = gameObject.AddComponent<LineRenderer>();
+                        ropeRenderer.startWidth = 0.04f;
+                        ropeRenderer.endWidth = 0.04f;
+
+                        if (ropeMaterial != null)
+                        {
+                            ropeRenderer.material = ropeMaterial;
+                        }
+                        else
+                        {
+                            var shader = Shader.Find("Universal Render Pipeline/Unlit")
+                                      ?? Shader.Find("Universal Render Pipeline/Lit")
+                                      ?? Shader.Find("Sprites/Default");
+                            if (shader != null)
+                            {
+                                ropeRenderer.material = new Material(shader) { color = new Color(0.9f, 0.85f, 0.6f) };
+                            }
+                        }
+                        ropeRenderer.enabled = false;
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[PlayerAbilities] Non-fatal LineRenderer setup notice: {ex.Message}");
             }
         }
 
@@ -107,16 +133,7 @@ namespace SliceIt.Player
         private void HandleBlock()
         {
             var mouse = Mouse.current;
-            bool shouldBlock = false;
-            if (mouse != null)
-            {
-                shouldBlock = mouse.rightButton.isPressed;
-            }
-            if (!shouldBlock)
-            {
-                shouldBlock = Input.GetMouseButton(1);
-            }
-
+            bool shouldBlock = mouse != null && mouse.rightButton.isPressed;
             shouldBlock = shouldBlock && !IsDashing && !IsGrappling;
 
             if (shouldBlock != IsBlocking)
@@ -142,15 +159,7 @@ namespace SliceIt.Player
         private void HandleDash()
         {
             var kb = Keyboard.current;
-            bool dashPressed = false;
-            if (kb != null)
-            {
-                dashPressed = kb.qKey.wasPressedThisFrame || kb.leftCtrlKey.wasPressedThisFrame;
-            }
-            if (!dashPressed)
-            {
-                dashPressed = Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.LeftControl);
-            }
+            bool dashPressed = kb != null && (kb.qKey.wasPressedThisFrame || kb.leftCtrlKey.wasPressedThisFrame);
 
             if (dashPressed && !IsDashing && !IsGrappling && Time.time >= dashCooldownEndTime)
             {
@@ -172,12 +181,6 @@ namespace SliceIt.Player
                 if (kb.sKey.isPressed) input.y -= 1f;
                 if (kb.aKey.isPressed) input.x -= 1f;
                 if (kb.dKey.isPressed) input.x += 1f;
-            }
-
-            if (input.sqrMagnitude < 0.01f)
-            {
-                input.x = Input.GetAxisRaw("Horizontal");
-                input.y = Input.GetAxisRaw("Vertical");
             }
 
             if (input.sqrMagnitude > 0.01f)
@@ -204,7 +207,7 @@ namespace SliceIt.Player
         private void HandleGrapple()
         {
             var kb = Keyboard.current;
-            bool grapplePressed = (kb != null && kb.eKey.wasPressedThisFrame) || Input.GetKeyDown(KeyCode.E);
+            bool grapplePressed = kb != null && kb.eKey.wasPressedThisFrame;
 
             if (grapplePressed && !IsGrappling && !IsDashing && Time.time >= grappleCooldownEndTime)
             {
@@ -257,7 +260,7 @@ namespace SliceIt.Player
             float distance = toAnchor.magnitude;
 
             var kb = Keyboard.current;
-            bool jumpPressed = (kb != null && kb.spaceKey.wasPressedThisFrame) || Input.GetKeyDown(KeyCode.Space);
+            bool jumpPressed = kb != null && kb.spaceKey.wasPressedThisFrame;
 
             // Detach if reached anchor or pressed Jump
             if (distance < 2.2f || jumpPressed)
@@ -283,7 +286,7 @@ namespace SliceIt.Player
             OnGrappleEnded?.Invoke();
         }
 
-        private void CancelAllAbilities()
+        public void CancelAllAbilities()
         {
             IsDashing = false;
             IsBlocking = false;

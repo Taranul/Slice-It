@@ -216,12 +216,41 @@ namespace SliceIt.Enemies
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRot, 180f * Time.deltaTime);
             }
 
-            // Movement
+            // Movement with separation and collision avoidance
             float effectiveSpeed = isEnraged ? (moveSpeed * 1.4f) : moveSpeed;
+            float personalRadius = 0.55f + (rank * 0.15f);
+
             if (distance > attackRange * 0.85f)
             {
-                Vector3 step = lookDir.normalized * effectiveSpeed * Time.deltaTime;
-                transform.position += step;
+                Vector3 separation = ComputeSeparationVelocity(personalRadius);
+                Vector3 moveDir = lookDir.normalized;
+
+                if (separation.sqrMagnitude > 0.01f)
+                {
+                    // Blend direct path with crowd repulsion force
+                    moveDir = (lookDir.normalized * 0.55f + separation.normalized * 0.85f).normalized;
+                }
+
+                // Check collision before applying movement to prevent overlap
+                Vector3 step = moveDir * effectiveSpeed * Time.deltaTime;
+                Vector3 targetPos = transform.position + step;
+
+                if (!IsPositionOccupiedByEnemy(targetPos, personalRadius * 0.85f))
+                {
+                    transform.position = targetPos;
+                }
+                else
+                {
+                    // If blocked ahead, slide along the perpendicular tangent
+                    Vector3 tangent = Vector3.Cross(moveDir, Vector3.up).normalized;
+                    Vector3 slideStep = tangent * (effectiveSpeed * 0.6f * Time.deltaTime);
+                    Vector3 slidePos = transform.position + slideStep;
+
+                    if (!IsPositionOccupiedByEnemy(slidePos, personalRadius * 0.8f))
+                    {
+                        transform.position = slidePos;
+                    }
+                }
             }
 
             // Melee strike
@@ -498,6 +527,69 @@ namespace SliceIt.Enemies
 
             return closestPlayer;
         }
+
+        #region Crowd Separation & Collision Resolution
+
+        private Vector3 ComputeSeparationVelocity(float personalRadius)
+        {
+            Vector3 separation = Vector3.zero;
+            float checkRadius = personalRadius * 2.4f;
+            Collider[] neighbors = Physics.OverlapSphere(transform.position + Vector3.up * 0.8f, checkRadius);
+            int count = 0;
+
+            for (int i = 0; i < neighbors.Length; i++)
+            {
+                var neighborCol = neighbors[i];
+                if (neighborCol.transform.root == transform.root) continue;
+
+                var neighborEntity = neighborCol.GetComponentInParent<EnemyEntity>();
+                if (neighborEntity != null && neighborEntity.IsActive)
+                {
+                    Vector3 diff = transform.position - neighborEntity.transform.position;
+                    diff.y = 0f;
+                    float dist = diff.magnitude;
+                    float desiredDist = personalRadius * 2.0f;
+
+                    if (dist < desiredDist && dist > 0.001f)
+                    {
+                        // Repel away with force inversely proportional to distance
+                        separation += diff.normalized * ((desiredDist - dist) / desiredDist);
+                        count++;
+                    }
+                    else if (dist <= 0.001f)
+                    {
+                        // Overlapping exactly: apply random radial nudge
+                        Vector2 randomCircle = UnityEngine.Random.insideUnitCircle.normalized;
+                        separation += new Vector3(randomCircle.x, 0f, randomCircle.y);
+                        count++;
+                    }
+                }
+            }
+
+            if (count > 0)
+            {
+                separation /= count;
+            }
+
+            return separation;
+        }
+
+        private bool IsPositionOccupiedByEnemy(Vector3 targetPos, float personalRadius)
+        {
+            Collider[] overlaps = Physics.OverlapSphere(targetPos + Vector3.up * 0.8f, personalRadius);
+            for (int i = 0; i < overlaps.Length; i++)
+            {
+                if (overlaps[i].transform.root == transform.root) continue;
+                var other = overlaps[i].GetComponentInParent<EnemyEntity>();
+                if (other != null && other.IsActive)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        #endregion
 
         #endregion
     }

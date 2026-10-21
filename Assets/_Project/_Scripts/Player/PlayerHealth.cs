@@ -197,13 +197,28 @@ namespace SliceIt.Player
 
         private void TriggerTeamDefeatServer()
         {
-            IsTeamDefeated.Value = true;
             Debug.LogWarning("[PlayerHealth] >>> TEAM DEFEATED! Both players are dead! <<<");
+
+            if (SliceIt.Progression.ArenaProgressionManager.Instance != null)
+            {
+                SliceIt.Progression.ArenaProgressionManager.Instance.NotifyTeamDefeatedServer();
+            }
+
+            // Ensure IsTeamDefeated is set to true on all players in the session
+            var allHealths = FindObjectsByType<PlayerHealth>(FindObjectsSortMode.None);
+            for (int i = 0; i < allHealths.Length; i++)
+            {
+                if (allHealths[i] != null)
+                {
+                    allHealths[i].IsTeamDefeated.Value = true;
+                }
+            }
+
             NotifyTeamDefeatedClientRpc();
         }
 
         /// <summary>
-        /// Restarts the level for all players upon clicking Restart on Death Screen.
+        /// Restarts the level for all players upon clicking Restart on Death Screen or Pause Menu.
         /// </summary>
         [Rpc(SendTo.Server)]
         public void RequestRestartServerRpc()
@@ -211,9 +226,74 @@ namespace SliceIt.Player
             if (!IsServer) return;
 
             Debug.Log("[PlayerHealth] Restarting level for all clients...");
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+            if (SliceIt.Progression.ArenaProgressionManager.Instance != null)
+            {
+                SliceIt.Progression.ArenaProgressionManager.Instance.RestartMatchServer();
+            }
+            else if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
             {
                 NetworkManager.Singleton.SceneManager.LoadScene("SampleScene", UnityEngine.SceneManagement.LoadSceneMode.Single);
+            }
+        }
+
+        /// <summary>
+        /// Server-authoritative reset of player state and teleportation to designated spawn.
+        /// </summary>
+        public void ResetPlayerToSpawnServer(ulong clientId)
+        {
+            if (!IsServer) return;
+
+            CurrentHealth.Value = maxHealth;
+            IsDowned.Value = false;
+            IsTeamDefeated.Value = false;
+            ReviveTimer.Value = 0f;
+            IsInvincible.Value = true;
+            invincibilityEndTime = Time.time + 2.5f;
+
+            Vector3 spawnPos = (clientId == NetworkManager.ServerClientId) ? new Vector3(-3f, 1f, 0f) : new Vector3(3f, 1f, 0f);
+            float yaw = (clientId == NetworkManager.ServerClientId) ? 90f : -90f;
+
+            var cc = GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
+            transform.position = spawnPos;
+            transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            if (cc != null) cc.enabled = true;
+
+            NotifyPlayerResetClientRpc(spawnPos, yaw);
+        }
+
+        [Rpc(SendTo.ClientsAndHost)]
+        private void NotifyPlayerResetClientRpc(Vector3 pos, float yaw)
+        {
+            var cc = GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
+            transform.position = pos;
+            transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            if (cc != null) cc.enabled = true;
+
+            if (playerController != null)
+            {
+                playerController.ResetLookOrientation(yaw);
+            }
+
+            if (playerAbilities != null)
+            {
+                playerAbilities.CancelAllAbilities();
+            }
+
+            var recorder = GetComponent<SliceIt.Combat.BladeInputRecorder>();
+            if (recorder != null)
+            {
+                recorder.CancelRecording();
+            }
+
+            OnHealthChanged?.Invoke(maxHealth, maxHealth);
+            OnPlayerRevived?.Invoke();
+
+            if (IsOwner)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
             }
         }
 

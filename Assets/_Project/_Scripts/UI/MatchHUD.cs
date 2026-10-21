@@ -196,10 +196,14 @@ namespace SliceIt.UI
         private void DrawMatchResultOverlay()
         {
             bool victory = ArenaProgressionManager.Instance != null && ArenaProgressionManager.Instance.IsVictory.Value;
-            bool isDefeated = playerHealth != null && playerHealth.IsTeamDefeated.Value;
+            bool isDefeated = (ArenaProgressionManager.Instance != null && ArenaProgressionManager.Instance.IsDefeat.Value)
+                           || (playerHealth != null && playerHealth.IsTeamDefeated.Value);
 
             if (victory)
             {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+
                 float w = 550f;
                 float h = 180f;
                 float x = (Screen.width - w) * 0.5f;
@@ -219,6 +223,9 @@ namespace SliceIt.UI
             }
             else if (isDefeated)
             {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+
                 float w = 550f;
                 float h = 210f;
                 float x = (Screen.width - w) * 0.5f;
@@ -235,14 +242,14 @@ namespace SliceIt.UI
 
                 // Restart Level button
                 GUI.color = new Color(0.2f, 0.85f, 0.35f);
-                if (GUI.Button(new Rect(x + 100, y + 120, 160, 44), "Restart Level"))
+                if (GUI.Button(new Rect(x + 80, y + 120, 180, 44), "Restart Level / Respawn"))
                 {
                     playerHealth.RequestRestartServerRpc();
                 }
 
                 // Leave to Menu button
                 GUI.color = new Color(0.85f, 0.3f, 0.3f);
-                if (GUI.Button(new Rect(x + 290, y + 120, 160, 44), "Leave to Menu"))
+                if (GUI.Button(new Rect(x + 290, y + 120, 180, 44), "Leave to Menu"))
                 {
                     NetworkSessionManager.Instance?.DisconnectSession();
                 }

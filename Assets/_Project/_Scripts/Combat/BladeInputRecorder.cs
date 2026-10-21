@@ -31,6 +31,7 @@ namespace SliceIt.Combat
 
         private PlayerController playerController;
         private PlayerAbilities playerAbilities;
+        private PlayerHealth playerHealth;
         private readonly List<TrajectoryPoint2D> points = new List<TrajectoryPoint2D>(64);
         private float recordStartTime;
         private Vector2 virtualCursor;
@@ -39,11 +40,18 @@ namespace SliceIt.Combat
         {
             playerController = GetComponent<PlayerController>();
             playerAbilities = GetComponent<PlayerAbilities>();
+            playerHealth = GetComponent<PlayerHealth>();
         }
 
         private void Update()
         {
             if (playerController != null && !playerController.IsOwner) return;
+            if (SliceIt.UI.LobbyUI.Instance != null && SliceIt.UI.LobbyUI.Instance.IsEscapeMenuOpen) return;
+            if (playerHealth != null && !playerHealth.IsAlive)
+            {
+                if (IsRecording) CancelRecording();
+                return;
+            }
 
             var mouse = Mouse.current;
             if (mouse == null) return;
@@ -136,6 +144,20 @@ namespace SliceIt.Combat
             }
             else
             {
+                OnRecordingCancelled?.Invoke();
+            }
+        }
+
+        public void CancelRecording()
+        {
+            if (IsRecording)
+            {
+                IsRecording = false;
+                if (playerController != null)
+                {
+                    playerController.SetCameraLookLocked(false);
+                }
+                points.Clear();
                 OnRecordingCancelled?.Invoke();
             }
         }

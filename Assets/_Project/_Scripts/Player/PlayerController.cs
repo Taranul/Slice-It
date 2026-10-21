@@ -181,7 +181,9 @@ namespace SliceIt.Player
 
             if (!IsOwner) return;
 
-            HandleCursorToggle();
+            // Pause look and locomotion if in-game escape menu is open
+            if (SliceIt.UI.LobbyUI.Instance != null && SliceIt.UI.LobbyUI.Instance.IsEscapeMenuOpen) return;
+
             HandleLook();
 
             // Downed players can ONLY look around with camera (locomotion blocked)
@@ -288,6 +290,20 @@ namespace SliceIt.Player
             isCameraLookLocked = locked;
         }
 
+        /// <summary>
+        /// Resets player body yaw and camera pitch to designated horizontal orientation upon level restart.
+        /// </summary>
+        public void ResetLookOrientation(float yaw)
+        {
+            currentYaw = yaw;
+            cameraPitch = 0f;
+            transform.rotation = Quaternion.Euler(0f, currentYaw, 0f);
+            if (cameraHolder != null)
+            {
+                cameraHolder.localRotation = Quaternion.identity;
+            }
+        }
+
         private void HandleCursorToggle()
         {
             var kb = Keyboard.current;
@@ -308,7 +324,7 @@ namespace SliceIt.Player
 
         private void HandleLook()
         {
-            if (isCameraLookLocked || Cursor.lockState != CursorLockMode.Locked) return;
+            if (isCameraLookLocked || Cursor.lockState != CursorLockMode.Locked || (SliceIt.UI.LobbyUI.Instance != null && SliceIt.UI.LobbyUI.Instance.IsEscapeMenuOpen)) return;
 
             var mouse = Mouse.current;
             if (mouse == null) return;

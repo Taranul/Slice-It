@@ -75,6 +75,15 @@ namespace SliceIt.Progression
             PairWindowRemaining.OnValueChanged -= HandleTimerChanged;
         }
 
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
         public void RegisterEnemy(EnemyEntity enemy)
         {
             if (!IsServer || enemy == null) return;
@@ -126,6 +135,20 @@ namespace SliceIt.Progression
             {
                 configuredPairs[i].Initialize();
             }
+        }
+
+        public void ResetAllPairsServer()
+        {
+            if (!IsServer) return;
+
+            ActivePairId.Value = 0;
+            PairWindowRemaining.Value = 0f;
+
+            for (int i = 0; i < configuredPairs.Count; i++)
+            {
+                configuredPairs[i].Initialize();
+            }
+            Debug.Log("[PairManager] Reset all pairs to initial active state.");
         }
 
         private void Update()

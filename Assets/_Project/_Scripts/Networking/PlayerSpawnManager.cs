@@ -39,16 +39,26 @@ namespace SliceIt.Networking
                 var playerObj = clientData.PlayerObject;
                 if (playerObj != null)
                 {
-                    Vector3 spawnPos = (clientId == NetworkManager.ServerClientId) ? hostSpawnPosition : clientSpawnPosition;
-                    Quaternion spawnRot = Quaternion.LookRotation((Vector3.zero - spawnPos).normalized, Vector3.up);
+                    var health = playerObj.GetComponent<SliceIt.Player.PlayerHealth>();
+                    if (health != null)
+                    {
+                        health.ResetPlayerToSpawnServer(clientId);
+                    }
+                    else
+                    {
+                        Vector3 spawnPos = (clientId == NetworkManager.ServerClientId) ? hostSpawnPosition : clientSpawnPosition;
+                        Vector3 lookDir = Vector3.zero - spawnPos;
+                        lookDir.y = 0f;
+                        Quaternion spawnRot = Quaternion.LookRotation(lookDir.normalized, Vector3.up);
 
-                    var cc = playerObj.GetComponent<CharacterController>();
-                    if (cc != null) cc.enabled = false;
+                        var cc = playerObj.GetComponent<CharacterController>();
+                        if (cc != null) cc.enabled = false;
 
-                    playerObj.transform.position = spawnPos;
-                    playerObj.transform.rotation = spawnRot;
+                        playerObj.transform.position = spawnPos;
+                        playerObj.transform.rotation = spawnRot;
 
-                    if (cc != null) cc.enabled = true;
+                        if (cc != null) cc.enabled = true;
+                    }
                 }
             }
         }
