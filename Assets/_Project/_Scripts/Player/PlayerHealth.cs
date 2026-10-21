@@ -34,6 +34,18 @@ namespace SliceIt.Player
             NetworkVariableWritePermission.Server
         );
 
+        public NetworkVariable<bool> IsInvincible { get; } = new NetworkVariable<bool>(
+            false,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
+        public NetworkVariable<bool> IsTeamDefeated { get; } = new NetworkVariable<bool>(
+            false,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
         public event Action<float, float> OnHealthChanged;
         public event Action<float> OnReviveTimerUpdated;
         public event Action OnPlayerDowned;
@@ -45,6 +57,8 @@ namespace SliceIt.Player
 
         private PlayerController playerController;
         private PlayerAbilities playerAbilities;
+        private float invincibilityDuration = 2.0f;
+        private float invincibilityEndTime = 0f;
 
         private void Awake()
         {
@@ -77,6 +91,13 @@ namespace SliceIt.Player
         {
             if (!IsServer) return;
 
+            // Handle post-respawn invincibility countdown
+            if (IsInvincible.Value && Time.time >= invincibilityEndTime)
+            {
+                IsInvincible.Value = false;
+                Debug.Log($"[PlayerHealth] Player {OwnerClientId} invincibility ended.");
+            }
+
             if (IsDowned.Value)
             {
                 ReviveTimer.Value -= Time.deltaTime;
@@ -97,11 +118,11 @@ namespace SliceIt.Player
         }
 
         /// <summary>
-        /// Applies damage to player with frontal shield block mitigation.
+        /// Applies damage to player with frontal shield block mitigation and invincibility check.
         /// </summary>
         public void TakeDamage(float amount, Vector3 damageSourcePosition)
         {
-            if (!IsServer || IsDowned.Value) return;
+            if (!IsServer || IsDowned.Value || IsInvincible.Value) return;
 
             // Check if player is blocking and facing the attack
             if (playerAbilities != null && playerAbilities.IsBlocking)
@@ -147,7 +168,11 @@ namespace SliceIt.Player
             CurrentHealth.Value = revivedHealth;
             ReviveTimer.Value = 0f;
 
-            Debug.Log($"[PlayerHealth] Player {OwnerClientId} successfully revived with {revivedHealth} HP!");
+            // 2-second invincibility after respawn
+            IsInvincible.Value = true;
+            invincibilityEndTime = Time.time + invincibilityDuration;
+
+            Debug.Log($"[PlayerHealth] Player {OwnerClientId} revived with {revivedHealth} HP! Invincible for 2s.");
             NotifyRevivedClientRpc();
         }
 
@@ -172,8 +197,24 @@ namespace SliceIt.Player
 
         private void TriggerTeamDefeatServer()
         {
+            IsTeamDefeated.Value = true;
             Debug.LogWarning("[PlayerHealth] >>> TEAM DEFEATED! Both players are dead! <<<");
             NotifyTeamDefeatedClientRpc();
+        }
+
+        /// <summary>
+        /// Restarts the level for all players upon clicking Restart on Death Screen.
+        /// </summary>
+        [Rpc(SendTo.Server)]
+        public void RequestRestartServerRpc()
+        {
+            if (!IsServer) return;
+
+            Debug.Log("[PlayerHealth] Restarting level for all clients...");
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+            {
+                NetworkManager.Singleton.SceneManager.LoadScene("SampleScene", UnityEngine.SceneManagement.LoadSceneMode.Single);
+            }
         }
 
         #region RPCs & Callbacks
@@ -181,6 +222,10 @@ namespace SliceIt.Player
         [Rpc(SendTo.ClientsAndHost)]
         private void NotifyDamageTakenClientRpc(float damage, float remainingHp)
         {
+            if (playerController != null)
+            {
+                playerController.TriggerHitAnimation();
+            }
             OnHealthChanged?.Invoke(remainingHp, maxHealth);
         }
 

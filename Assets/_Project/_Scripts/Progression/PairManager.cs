@@ -176,6 +176,17 @@ namespace SliceIt.Progression
             var pair = configuredPairs.Find(p => p.PairId == pid);
             if (pair == null)
             {
+                // If this is the standalone Final Boss, trigger match victory immediately
+                if (defeatedEnemy.Rank >= 6)
+                {
+                    Debug.LogWarning("[PairManager] Final Boss defeated! Triggering match victory!");
+                    if (ArenaProgressionManager.Instance != null)
+                    {
+                        ArenaProgressionManager.Instance.NotifyFinalBossDefeated();
+                    }
+                    return;
+                }
+
                 Debug.LogWarning($"[PairManager] No pair found for defeated enemy with pairId={pid}");
                 return;
             }
@@ -210,23 +221,69 @@ namespace SliceIt.Progression
         {
             pair.ResolutionState = PairResolutionState.Merged;
 
+            int currentRank = pair.EnemyA != null ? pair.EnemyA.Rank : 1;
+            int nextRank = currentRank + 1;
+
             // Despawn both defeated participants
             if (pair.EnemyA != null) pair.EnemyA.CompleteMerge();
             if (pair.EnemyB != null) pair.EnemyB.CompleteMerge();
 
-            // Spawn next rank enemy at designated spawn point
-            Vector3 spawnPos = pair.MergeSpawnPoint != null ? pair.MergeSpawnPoint.position : Vector3.zero;
-            Quaternion spawnRot = pair.MergeSpawnPoint != null ? pair.MergeSpawnPoint.rotation : Quaternion.identity;
+            // Spawn next rank enemy at designated spawn point or concentric inward position
+            Vector3 spawnPos = Vector3.zero;
+            Quaternion spawnRot = Quaternion.identity;
 
-            GameObject prefabToSpawn = pair.NextRankPrefab != null ? pair.NextRankPrefab : rank2Prefab;
+            if (pair.MergeSpawnPoint != null)
+            {
+                spawnPos = pair.MergeSpawnPoint.position;
+                spawnRot = pair.MergeSpawnPoint.rotation;
+            }
+            else
+            {
+                Vector3 posA = pair.EnemyA != null ? pair.EnemyA.DefeatedPosition : Vector3.zero;
+                Vector3 posB = pair.EnemyB != null ? pair.EnemyB.DefeatedPosition : Vector3.zero;
+                Vector3 mid = (posA + posB) * 0.5f;
+                float currentRadius = new Vector2(mid.x, mid.z).magnitude;
+                float targetRadius = Mathf.Max(0f, currentRadius - 7.0f);
+                Vector2 dir2D = (new Vector2(mid.x, mid.z)).normalized;
+                if (dir2D.sqrMagnitude < 0.01f) dir2D = Vector2.right;
+
+                spawnPos = new Vector3(dir2D.x * targetRadius, 0.5f, dir2D.y * targetRadius);
+                Vector3 lookAtCenter = (Vector3.zero - spawnPos).normalized;
+                lookAtCenter.y = 0f;
+                if (lookAtCenter.sqrMagnitude > 0.01f)
+                {
+                    spawnRot = Quaternion.LookRotation(lookAtCenter, Vector3.up);
+                }
+            }
+
+            GameObject prefabToSpawn = pair.NextRankPrefab;
+            if (prefabToSpawn == null && ArenaProgressionManager.Instance != null)
+            {
+                prefabToSpawn = ArenaProgressionManager.Instance.GetRankPrefab(nextRank);
+            }
+            if (prefabToSpawn == null)
+            {
+                prefabToSpawn = rank2Prefab;
+            }
+
             if (prefabToSpawn != null)
             {
                 var nextRankObj = Instantiate(prefabToSpawn, spawnPos, spawnRot);
+
+                // Configure next rank pair info
+                var nextEntity = nextRankObj.GetComponent<EnemyEntity>();
+                if (nextEntity != null)
+                {
+                    int nextPairId = 100 * nextRank + ((pair.PairId + 1) / 2);
+                    Color nextColor = Color.HSVToRGB(((nextPairId * 47) % 360) / 360f, 0.85f, 1f);
+                    nextEntity.InitializePairInfo(nextPairId * 10 + (pair.PairId % 2 == 1 ? 1 : 2), nextPairId, nextRank, nextColor);
+                }
+
                 var netObj = nextRankObj.GetComponent<NetworkObject>();
                 if (netObj != null)
                 {
                     netObj.Spawn();
-                    Debug.Log($"[PairManager] Spawned next rank enemy ({nextRankObj.name}) on network at {spawnPos}.");
+                    Debug.Log($"[PairManager] Spawned next rank enemy ({nextRankObj.name}, Rank {nextRank}) on network at {spawnPos}.");
                 }
             }
             else

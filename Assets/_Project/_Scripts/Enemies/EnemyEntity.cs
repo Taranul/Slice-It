@@ -58,6 +58,8 @@ namespace SliceIt.Enemies
         public event Action<EnemyEntity> OnRestored;
 
         private float stunRemaining = 0f;
+        private Animator animator;
+        private Vector3 lastPosition;
 
         private void Awake()
         {
@@ -65,12 +67,15 @@ namespace SliceIt.Enemies
             if (bodyCollider == null) bodyCollider = GetComponent<Collider>();
             if (visualRoot == null) visualRoot = transform.Find("Visuals") ?? transform;
             if (rb == null) rb = GetComponent<Rigidbody>();
+            animator = GetComponentInChildren<Animator>();
+            lastPosition = transform.position;
         }
 
         public override void OnNetworkSpawn()
         {
             State.OnValueChanged += HandleStateChanged;
             ApplyStateVisuals(State.Value);
+            lastPosition = transform.position;
 
             if (IsServer)
             {
@@ -94,6 +99,16 @@ namespace SliceIt.Enemies
             if (stunRemaining > 0f)
             {
                 stunRemaining -= Time.deltaTime;
+            }
+
+            // Sync locomotion speed with Animator across network
+            float moveDist = Vector3.Distance(transform.position, lastPosition);
+            float speed = moveDist / Mathf.Max(0.0001f, Time.deltaTime);
+            lastPosition = transform.position;
+
+            if (animator != null && State.Value == EnemyState.Active)
+            {
+                animator.SetFloat("Speed", speed);
             }
         }
 
@@ -191,6 +206,10 @@ namespace SliceIt.Enemies
         private void NotifyNearMissClientRpc(Vector3 knockback, float stunDuration)
         {
             stunRemaining = stunDuration;
+            if (animator != null)
+            {
+                animator.SetTrigger("Hit");
+            }
             Debug.Log($"[EnemyEntity] Enemy {enemyId} suffered near-miss! Stunned for {stunDuration}s.");
         }
 
@@ -226,6 +245,7 @@ namespace SliceIt.Enemies
                     if (visualRoot != null) visualRoot.localRotation = Quaternion.identity;
                     if (core != null) core.SetColliderActive(true);
                     if (bodyCollider != null) bodyCollider.enabled = true;
+                    if (animator != null) animator.SetBool("IsDefeated", false);
                     gameObject.SetActive(true);
                     break;
 
@@ -234,6 +254,7 @@ namespace SliceIt.Enemies
                     if (visualRoot != null) visualRoot.localRotation = Quaternion.Euler(85f, 0f, 0f);
                     if (core != null) core.SetColliderActive(false);
                     if (bodyCollider != null) bodyCollider.enabled = false;
+                    if (animator != null) animator.SetBool("IsDefeated", true);
                     break;
 
                 case EnemyState.MergedDespawned:

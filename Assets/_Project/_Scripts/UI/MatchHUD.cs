@@ -110,6 +110,13 @@ namespace SliceIt.UI
             // Text
             GUI.color = Color.white;
             GUI.Label(new Rect(x + 10, y + 2, width, height), $"HP: {hp:F0} / {maxHp:F0}", boldStyle);
+
+            if (playerHealth.IsInvincible.Value)
+            {
+                GUI.color = Color.yellow;
+                GUI.Label(new Rect(x + width + 12, y + 2, 140, height), "[INVINCIBLE]", boldStyle);
+                GUI.color = Color.white;
+            }
         }
 
         private void DrawAbilitiesPanel()
@@ -159,7 +166,7 @@ namespace SliceIt.UI
             GUI.DrawTexture(new Rect(x, y, width, height), whiteTex);
 
             GUI.color = Color.cyan;
-            GUI.Label(new Rect(x + 10, y + 6, width - 20, 20), $"ENEMIES: {remaining} / 64", boldStyle);
+            GUI.Label(new Rect(x + 10, y + 6, width - 20, 20), $"ENEMIES: {remaining} / 32", boldStyle);
             GUI.color = Color.yellow;
             GUI.Label(new Rect(x + 10, y + 28, width - 20, 20), $"HIGHEST RANK: {rank} / 7", boldStyle);
             GUI.color = Color.white;
@@ -189,6 +196,7 @@ namespace SliceIt.UI
         private void DrawMatchResultOverlay()
         {
             bool victory = ArenaProgressionManager.Instance != null && ArenaProgressionManager.Instance.IsVictory.Value;
+            bool isDefeated = playerHealth != null && playerHealth.IsTeamDefeated.Value;
 
             if (victory)
             {
@@ -202,12 +210,43 @@ namespace SliceIt.UI
 
                 GUI.color = Color.white;
                 GUI.Label(new Rect(x, y + 25, w, 40), "VICTORY!", titleStyle);
-                GUI.Label(new Rect(x, y + 75, w, 30), "Final Boss Defeated! All 64 enemies sliced and merged!", boldStyle);
+                GUI.Label(new Rect(x, y + 75, w, 30), "Final Boss Defeated! Match Won!", boldStyle);
 
                 if (GUI.Button(new Rect(x + 175, y + 120, 200, 38), "Leave to Main Menu"))
                 {
                     NetworkSessionManager.Instance?.DisconnectSession();
                 }
+            }
+            else if (isDefeated)
+            {
+                float w = 550f;
+                float h = 210f;
+                float x = (Screen.width - w) * 0.5f;
+                float y = (Screen.height - h) * 0.5f;
+
+                GUI.color = new Color(0.12f, 0.02f, 0.02f, 0.95f);
+                GUI.DrawTexture(new Rect(x, y, w, h), whiteTex);
+
+                GUI.color = new Color(1f, 0.25f, 0.25f);
+                GUI.Label(new Rect(x, y + 20, w, 40), "TEAM DEFEATED", titleStyle);
+
+                GUI.color = Color.white;
+                GUI.Label(new Rect(x, y + 68, w, 30), "Both players have fallen in battle.", boldStyle);
+
+                // Restart Level button
+                GUI.color = new Color(0.2f, 0.85f, 0.35f);
+                if (GUI.Button(new Rect(x + 100, y + 120, 160, 44), "Restart Level"))
+                {
+                    playerHealth.RequestRestartServerRpc();
+                }
+
+                // Leave to Menu button
+                GUI.color = new Color(0.85f, 0.3f, 0.3f);
+                if (GUI.Button(new Rect(x + 290, y + 120, 160, 44), "Leave to Menu"))
+                {
+                    NetworkSessionManager.Instance?.DisconnectSession();
+                }
+                GUI.color = Color.white;
             }
         }
     }

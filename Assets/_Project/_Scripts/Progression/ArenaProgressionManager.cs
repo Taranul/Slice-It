@@ -22,7 +22,7 @@ namespace SliceIt.Progression
 
         [Header("Progression State")]
         public NetworkVariable<int> EnemiesRemaining { get; } = new NetworkVariable<int>(
-            64,
+            32,
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Server
         );
@@ -42,6 +42,16 @@ namespace SliceIt.Progression
         public event Action OnVictoryAchieved;
 
         private PairManager pairManager;
+
+        public GameObject GetRankPrefab(int rank)
+        {
+            int index = rank - 1;
+            if (rankPrefabs != null && index >= 0 && index < rankPrefabs.Length)
+            {
+                return rankPrefabs[index];
+            }
+            return null;
+        }
 
         private void Awake()
         {

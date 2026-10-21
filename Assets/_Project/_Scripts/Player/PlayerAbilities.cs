@@ -88,15 +88,36 @@ namespace SliceIt.Player
             HandleGrapple();
         }
 
+        public Vector3 GetActiveMovementVelocity()
+        {
+            if (IsDashing)
+            {
+                return dashDirection * dashSpeed;
+            }
+            if (IsGrappling)
+            {
+                Vector3 toAnchor = grapplePoint - transform.position;
+                return toAnchor.normalized * grapplePullSpeed;
+            }
+            return Vector3.zero;
+        }
+
         #region Block
 
         private void HandleBlock()
         {
             var mouse = Mouse.current;
-            if (mouse == null) return;
+            bool shouldBlock = false;
+            if (mouse != null)
+            {
+                shouldBlock = mouse.rightButton.isPressed;
+            }
+            if (!shouldBlock)
+            {
+                shouldBlock = Input.GetMouseButton(1);
+            }
 
-            // Block by holding Right Mouse Button (unless dashing or grappling)
-            bool shouldBlock = mouse.rightButton.isPressed && !IsDashing && !IsGrappling;
+            shouldBlock = shouldBlock && !IsDashing && !IsGrappling;
 
             if (shouldBlock != IsBlocking)
             {
@@ -121,37 +142,43 @@ namespace SliceIt.Player
         private void HandleDash()
         {
             var kb = Keyboard.current;
-            if (kb == null) return;
-
-            // Trigger Dash via Q or LeftControl
-            bool dashPressed = kb.qKey.wasPressedThisFrame || kb.leftCtrlKey.wasPressedThisFrame;
+            bool dashPressed = false;
+            if (kb != null)
+            {
+                dashPressed = kb.qKey.wasPressedThisFrame || kb.leftCtrlKey.wasPressedThisFrame;
+            }
+            if (!dashPressed)
+            {
+                dashPressed = Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.LeftControl);
+            }
 
             if (dashPressed && !IsDashing && !IsGrappling && Time.time >= dashCooldownEndTime)
             {
                 StartDash(kb);
             }
 
-            if (IsDashing)
+            if (IsDashing && Time.time >= dashEndTime)
             {
-                if (Time.time >= dashEndTime)
-                {
-                    IsDashing = false;
-                }
-                else
-                {
-                    // Apply dash displacement
-                    characterController.Move(dashDirection * dashSpeed * Time.deltaTime);
-                }
+                IsDashing = false;
             }
         }
 
         private void StartDash(Keyboard kb)
         {
             Vector2 input = Vector2.zero;
-            if (kb.wKey.isPressed) input.y += 1f;
-            if (kb.sKey.isPressed) input.y -= 1f;
-            if (kb.aKey.isPressed) input.x -= 1f;
-            if (kb.dKey.isPressed) input.x += 1f;
+            if (kb != null)
+            {
+                if (kb.wKey.isPressed) input.y += 1f;
+                if (kb.sKey.isPressed) input.y -= 1f;
+                if (kb.aKey.isPressed) input.x -= 1f;
+                if (kb.dKey.isPressed) input.x += 1f;
+            }
+
+            if (input.sqrMagnitude < 0.01f)
+            {
+                input.x = Input.GetAxisRaw("Horizontal");
+                input.y = Input.GetAxisRaw("Vertical");
+            }
 
             if (input.sqrMagnitude > 0.01f)
             {
@@ -166,6 +193,7 @@ namespace SliceIt.Player
             dashEndTime = Time.time + dashDuration;
             dashCooldownEndTime = Time.time + dashCooldown;
 
+            Debug.Log("[PlayerAbilities] Dash activated!");
             OnDashTriggered?.Invoke();
         }
 
@@ -176,10 +204,9 @@ namespace SliceIt.Player
         private void HandleGrapple()
         {
             var kb = Keyboard.current;
-            if (kb == null) return;
+            bool grapplePressed = (kb != null && kb.eKey.wasPressedThisFrame) || Input.GetKeyDown(KeyCode.E);
 
-            // Trigger Grapple via E key
-            if (kb.eKey.wasPressedThisFrame && !IsGrappling && !IsDashing && Time.time >= grappleCooldownEndTime)
+            if (grapplePressed && !IsGrappling && !IsDashing && Time.time >= grappleCooldownEndTime)
             {
                 TryShootGrapple();
             }
@@ -192,11 +219,20 @@ namespace SliceIt.Player
 
         private void TryShootGrapple()
         {
-            if (playerController.PlayerCamera == null) return;
+            if (playerController == null || playerController.PlayerCamera == null) return;
 
             Ray ray = playerController.PlayerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-            if (Physics.Raycast(ray, out RaycastHit hit, grappleMaxDistance, ~0, QueryTriggerInteraction.Ignore))
+            Vector3 startPos = ray.origin + ray.direction * 0.7f;
+
+            // Use RaycastAll to filter out player's own colliders
+            RaycastHit[] hits = Physics.RaycastAll(startPos, ray.direction, grappleMaxDistance, ~0, QueryTriggerInteraction.Ignore);
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+            for (int i = 0; i < hits.Length; i++)
             {
+                var hit = hits[i];
+                if (hit.collider.transform.root == transform.root) continue; // Skip self colliders
+
                 // Anchor to geometry
                 grapplePoint = hit.point;
                 IsGrappling = true;
@@ -205,11 +241,13 @@ namespace SliceIt.Player
                 if (ropeRenderer != null)
                 {
                     ropeRenderer.enabled = true;
-                    ropeRenderer.SetPosition(0, transform.position);
+                    ropeRenderer.SetPosition(0, transform.position + Vector3.up * 0.8f);
                     ropeRenderer.SetPosition(1, grapplePoint);
                 }
 
+                Debug.Log($"[PlayerAbilities] Grappling hook attached at {grapplePoint} on {hit.collider.gameObject.name}!");
                 OnGrappleStarted?.Invoke(grapplePoint);
+                break;
             }
         }
 
@@ -219,17 +257,14 @@ namespace SliceIt.Player
             float distance = toAnchor.magnitude;
 
             var kb = Keyboard.current;
-            bool jumpPressed = kb != null && kb.spaceKey.wasPressedThisFrame;
+            bool jumpPressed = (kb != null && kb.spaceKey.wasPressedThisFrame) || Input.GetKeyDown(KeyCode.Space);
 
             // Detach if reached anchor or pressed Jump
-            if (distance < 2.0f || jumpPressed)
+            if (distance < 2.2f || jumpPressed)
             {
                 EndGrapple();
                 return;
             }
-
-            Vector3 pullDir = toAnchor.normalized;
-            characterController.Move(pullDir * grapplePullSpeed * Time.deltaTime);
 
             if (ropeRenderer != null && ropeRenderer.enabled)
             {

@@ -75,7 +75,7 @@ namespace SliceIt.Tests
 
             var so = new UnityEditor.SerializedObject(pm);
             var pairs = so.FindProperty("configuredPairs");
-            Assert.GreaterOrEqual(pairs.arraySize, 32, "Arena must have at least 32 configured pairs for 64 Rank 1 enemies.");
+            Assert.GreaterOrEqual(pairs.arraySize, 16, "Arena must have at least 16 configured pairs for 32 Rank 1 enemies.");
         }
     }
 }
